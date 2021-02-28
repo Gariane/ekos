@@ -1,53 +1,25 @@
+; compatibility_check.asm
+extern check_multiboot2
+extern check_cpuid
+extern check_longmode
+
+; paging.asm
+extern setup_identity_paging
+extern enable_paging
+
+
+; set up stack
+section .bss
+align 16
+stack_top:
+    resb 0x4000 
+stack_bottom:
+
+
 section .text
-bits 32
-
-; check if kernel was booted using multiboot2 compliant bootloader
-check_multiboot2:
-    cmp eax, 0x36d76289
-    jne no_multiboot2
-    ret
-no_multiboot2:
-    mov al, "0"
-    jmp error
-
-; check if processor supports cpuid instruction
-; source + explanation: https://wiki.osdev.org/Setting_Up_Long_Mode
-check_cpuid:
-    pushfd
-    pop eax
-    mov ecx, eax
-    xor eax, 1 << 21
-    push eax
-    popfd
-    pushfd
-    pop eax
-    push ecx
-    popfd
-    xor eax, ecx
-    jz no_cpuid
-    ret
-no_cpuid:
-    mov al, "1"
-    jmp error
-
-; check if processor supports long mode
-; source + explanation: https://wiki.osdev.org/Setting_Up_Long_Mode
-check_longmode:
-    mov eax, 0x80000000
-    cpuid
-    cmp eax, 0x80000001
-    jb no_longmode
-
-    mov eax, 0x80000001
-    cpuid
-    test edx, 1 << 29
-    jz no_longmode
-    ret
-no_longmode:
-    mov al, "2"
-    jmp error
 
 ; entry function
+bits 32
 global _start
 _start:
     mov esp, stack_bottom
@@ -57,22 +29,42 @@ _start:
     call check_cpuid
     call check_longmode
 
-    ; print OK to screen, indicating we booted successfully
-    mov dword [0xb8000], 0x2f4b2f4f
+    ; set up identity paging
+    call setup_identity_paging
+    call enable_paging
+
+    ; load gdt and far jump to reload CS register
+    lgdt [gdt.ptr]
+    jmp gdt.code:long_mode_entry
+
+; 64 bit code
+bits 64
+long_mode_entry:
+    ; load NULL to DS registers
+    mov ax, 0
+    mov ss, ax
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+    ; print OKAY
+    mov rax, 0x2f592f412f4b2f4f
+    mov qword [0xb8000], rax
+
+    ; loop indefinetly
+    cli 
+loop:
     hlt
-
-; print ASCII value from al register as "ERR: "
-error:
-    mov dword [0xb8000], 0x4f524f45
-    mov dword [0xb8004], 0x4f3a4f52
-    mov dword [0xb8008], 0x4f204f20
-    mov byte  [0xb800a], al
-    hlt
+    jmp loop
 
 
-; set up stack
-section .bss
-
-stack_top:
-    resb 0x4000 
-stack_bottom:
+; gdt
+section .ro_data
+gdt:
+    dq 0
+.code: equ $ - gdt
+    dq (1 << 43) | (1 << 44) | (1 << 47) | (1 << 53)
+.ptr:
+    dw $ - gdt - 1
+    dq gdt
