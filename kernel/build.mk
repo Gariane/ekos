@@ -3,7 +3,7 @@ KERNEL_BINARY = $(BUILD_DIR)/kernel.bin
 KERNEL_CXXFLAGS = -ffreestanding -fno-rtti -fno-exceptions -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c
 KERNEL_LDFLAGS = -n -nostdlib -ffreestanding -mno-red-zone -lgcc
 
-KERNEL_SOURCES = 
+KERNEL_SOURCES = $(wildcard kernel/*.cc)
 KERNEL_ASM_SOURCES = $(wildcard kernel/arch/$(BUILD_ARCH)/*.asm)
 
 KERNEL_OBJ = $(patsubst %.asm, $(BUILD_DIR)/%.o, $(KERNEL_ASM_SOURCES)) \

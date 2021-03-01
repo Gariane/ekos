@@ -7,6 +7,8 @@ extern check_longmode
 extern setup_identity_paging
 extern enable_paging
 
+; main.cc
+extern kmain
 
 ; set up stack
 section .bss
@@ -48,9 +50,8 @@ long_mode_entry:
     mov fs, ax
     mov gs, ax
 
-    ; print OKAY
-    mov rax, 0x2f592f412f4b2f4f
-    mov qword [0xb8000], rax
+    ; goodbye assembly world
+    call kmain
 
     ; loop indefinetly
     cli 

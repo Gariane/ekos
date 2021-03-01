@@ -5,7 +5,7 @@ PRODUCT_DIR = $(shell pwd)/products
 PRODUCT = $(PRODUCT_DIR)/ekos.img
 
 CXX = $(HOME)/opt/cross_x64/bin/x86_64-elf-g++
-CXXFLAGS = -std=c++20 -MD -ffreestanding -Wall -Wextra -Werror -fno-rtti -fno-exceptions
+CXXFLAGS = -std=c++20 -MD -ffreestanding -Wold-style-cast -Wall -Wextra -Werror -fno-rtti -fno-exceptions
 LDFLAGS = -nostdlib -ffreestanding -lgcc
 
 AS = nasm
